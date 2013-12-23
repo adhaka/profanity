@@ -1,5 +1,3 @@
-
-
 import re, nltk, random, string, time
 import numpy as np
 import sys
@@ -14,25 +12,44 @@ def extractFeatures(sentences, highlights, impWords, label):
 		featureS = (feature, label)		
 		featureSet.append(featureS)
 
-	print len(featureSet)
+	# print len(featureSet)
 	return featureSet
 
 
-def predict(classifier, test):
+def predict(classifier, test, impWords):
 	proccesedTest = processSent(test)
 	featureSentence = extractFeature(proccesedTest, highlights, impWords)
-	print test
-	print featureSentence
-	result = classifier.classify(featureSentence)
+	if(len(featureSentence) == 0):
+		result = 'false'
+	else :
+		result = classifier.classify(featureSentence)
 	return result
 
 
 
+
+def predictDescription(classifier, text, impWords):
+	
+	sentences = text.rstrip().split('.')
+	print sentences
+	for sentence in sentences:
+		result = predict(classifier, sentence, impWords)
+		if result == 'true':
+			print sentence
+			return 'true'
+
+
+	return 'false' 
+
+
+
+
 def extractFeature(sentence, highlights, impWords):
-	feature = {"precede": "",
-			"isonly" : 0,
-			"isnear" : 0,
-			"succede": ""}
+	feature = {}
+	# feature = {"precede": "",
+	# 		"isonly" : 0,
+	# 		"isnear" : 0,
+	# 		"succede": ""}
 	for word in nltk.word_tokenize(sentence):
 		for highlight in highlights:
 			if highlight in word.lower():
@@ -96,7 +113,7 @@ def processSent(sentence):
 
 
 
-highlights = ['hindu', 'muslim', 'jain', 'christian', 'muslims']
+highlights = ['hindu', 'muslim', 'jain', 'christian', 'muslims', 'parsi']
 
 exclude = set(string.punctuation)
 nonPunct = re.compile('[A-Za-z0-9]+')
@@ -104,111 +121,106 @@ near = ['near', 'close', 'nearby', 'next', 'behind', 'opposite']
 only = 'only'
 
 
-f3 = open('/home/akashdhaka/R/phrase-intent-score/false.txt', 'r')
 
-raw3 = f3.read()
-f3.close()
+def trainClassifier():
+	f3 = open('/home/akashdhaka/R/phrase-intent-score/false.txt', 'r')
 
-tokensFalse = nltk.wordpunct_tokenize(raw3)
-fd = nltk.FreqDist(word.lower() for word in tokensFalse )
-freqWordsFalse = fd.keys()[:35]
-# print(freqWordsFalse)
+	raw3 = f3.read()
+	f3.close()
 
-
-f4 = open('/home/akashdhaka/R/phrase-intent-score/true.txt', 'r')
-raw4 = f4.read()
-f4.close()
-tokensTrue = nltk.wordpunct_tokenize(raw4)
-sentencesTrue = raw4.rstrip().split('\n')
-
-fd = nltk.FreqDist(word.lower() for word in tokensTrue )
-freqWordsTrue = fd.keys()[:35]
-# print(freqWordsTrue)
+	tokensFalse = nltk.wordpunct_tokenize(raw3)
+	fd = nltk.FreqDist(word.lower() for word in tokensFalse )
+	freqWordsFalse = fd.keys()[:35]
 
 
+	f4 = open('/home/akashdhaka/R/phrase-intent-score/true.txt', 'r')
+	raw4 = f4.read()
+	f4.close()
+	tokensTrue = nltk.wordpunct_tokenize(raw4)
+	sentencesTrue = raw4.rstrip().split('\n')
 
-uniqueWordsPos = [word for word in freqWordsTrue if (word not in freqWordsFalse and word not in highlights and len(word) > 2)]
-uniqueWordsNeg = [word for word in freqWordsFalse if (word not in freqWordsTrue and word not in highlights and len(word) > 2)]
+	fd = nltk.FreqDist(word.lower() for word in tokensTrue )
+	freqWordsTrue = fd.keys()[:35]
 
-posWords = uniqueWordsPos[:8]
-negWords = uniqueWordsNeg[:5]
+	uniqueWordsPos = [word for word in freqWordsTrue if (word not in freqWordsFalse and word not in highlights and len(word) > 2)]
+	uniqueWordsNeg = [word for word in freqWordsFalse if (word not in freqWordsTrue and word not in highlights and len(word) > 2)]
 
-impWords = posWords + negWords
+	posWords = uniqueWordsPos[:8]
+	negWords = uniqueWordsNeg[:5]
 
-sentencesFalse = raw3.rstrip().split('\n')
+	impWords = posWords + negWords
 
-processedFalseSent = []
-processedSent = []
-featureSet = []
-falseSet = []
-trueSet = []
+	sentencesFalse = raw3.rstrip().split('\n')
 
-# remove PERIOD from a string, nltk doesnt do it.
-processedFalseSent = processSentences(sentencesFalse)
-falseSet = extractFeatures(processedFalseSent, highlights, impWords, 'false')
+	processedFalseSent = []
+	processedSent = []
+	featureSet = []
+	falseSet = []
+	trueSet = []
+
+	processedFalseSent = processSentences(sentencesFalse)
+	falseSet = extractFeatures(processedFalseSent, highlights, impWords, 'false')
 			
-# print uniqueWordsPos
-# print uniqueWordsNeg
+	processedTrueSent = processSentences(sentencesTrue)
+	trueSet = extractFeatures(processedTrueSent, highlights, impWords, 'true')
 
-# tagpairsNeg = nltk.pos_tag(uniqueWordsNeg)
-# tagpairsPos = nltk.pos_tag(uniqueWordsPos)
-
-
-processedTrueSent = processSentences(sentencesTrue)
-trueSet = extractFeatures(processedTrueSent, highlights, impWords, 'true')
-
-
-finalSet = falseSet + trueSet
-random.shuffle(finalSet)
-# print(len(falseSet))
-# print(len(trueSet))
-# print(len(finalSet))
-
-BcAccuracy = []
-
-random.shuffle(finalSet)
-train_set, test_set = finalSet[:350], finalSet[350:]
-classifier = nltk.NaiveBayesClassifier.train(train_set)
-	# print nltk.classify.accuracy(classifier, test_set)
-fs = [ feature for (feature, label) in test_set]
-BcAccuracy.append(nltk.classify.accuracy(classifier, test_set))
-s1 = classifier.classify(fs[1])
-classifier.show_most_informative_features(10)
-
-
-# for (feature, label) in test_set:
-# 	predLabel = classifier.classify(feature)
-# 	if predLabel != label:
-# 		print feature, label, predLabel
-
-
-
-DtAccuracy = []
-for i in range(1, 2):
+	finalSet = falseSet + trueSet
 	random.shuffle(finalSet)
-	train_set, test_set = finalSet[:370], finalSet[370:]
-	classifier = nltk.DecisionTreeClassifier.train(train_set)
+
+	BcAccuracy = []
+
+	random.shuffle(finalSet)
+	train_set, test_set = finalSet[:400], finalSet[400:]
+	classifier = nltk.NaiveBayesClassifier.train(train_set)
 	# print nltk.classify.accuracy(classifier, test_set)
-	DtAccuracy.append(nltk.classify.accuracy(classifier, test_set))
+	fs = [ feature for (feature, label) in test_set]
+	print nltk.classify.accuracy(classifier, test_set)
+	# NaiveBayesClassifierccuracy.append(nltk.classify.accuracy(classifier, test_set))
+	s1 = classifier.classify(fs[1])
+	classifier.show_most_informative_features(10)
+
+
+	for (feature, label) in test_set:
+		predLabel = classifier.classify(feature)
+		if predLabel != label:
+		 	print feature, label, predLabel
+
+
+	return (classifier, impWords)
+
+
+
+# DtAccuracy = []
+# for i in range(1, 2):
+# 	random.shuffle(finalSet)
+# 	train_set, test_set = finalSet[:550], finalSet[550:]
+# 	classifier = nltk.DecisionTreeClassifier.train(train_set)
+# 	# print nltk.classify.accuracy(classifier, test_set)
+# 	DtAccuracy.append(nltk.classify.accuracy(classifier, test_set))
 
 
 sentenceTest = "3 bhk flat for sale in near christian college,Calicut."
 if(len(sys.argv) >= 2):
 	sentenceTest = sys.argv[1]
 
-r1 = predict(classifier, sentenceTest)
-print r1
+(classifier, impWords) = trainClassifier()
+# r1 = predict(classifier, sentenceTest, impWords)
+# print r1
+
+r2 = predictDescription(classifier, sentenceTest, impWords)
+print r2
  
-print  np.mean(BcAccuracy) 
-# print  np.median(BcAccuracy)
 
 # print  np.mean(DtAccuracy) 
 # print  np.median(DtAccuracy)
 
-
 # helper functions
+#this is a great society to live, with designer kitchen , 24 hrs supply. It is available for rent. Price
+#is Rs13000. Property built by xyz constructions.
 
 
+
+				
 
 
 
