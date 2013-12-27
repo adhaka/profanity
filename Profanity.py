@@ -29,23 +29,23 @@ class Profanity:
 
 
 
-	def predict(self, classifier, test, impWords):
-		proccesedTest = processSent(test)
-		featureSentence = extractFeature(proccesedTest, highlights, impWords)
+	def predict(self, test):
+		proccesedTest = self.processSent(test)
+		featureSentence = self.extractFeature(proccesedTest)
 		if(len(featureSentence) == 0):
 			result = 'false'
 		else :
-			result = classifier.classify(featureSentence)
+			result = self.classifier.classify(featureSentence)
 		return result
 
 
 
 
-	def predictDescription(self, classifier, text, impWords):	
+	def predictDescription(self, text):	
 		sentences = text.rstrip().split('.')
 		print sentences
 		for sentence in sentences:
-			result = predict(classifier, sentence, impWords)
+			result = self.predict(sentence)
 			if result == 'true':
 				print sentence
 				return 'true'
@@ -118,7 +118,7 @@ class Profanity:
 		return processedSent
 
 
-	def processSent(sentence):
+	def processSent(self, sentence):
 		proSent = sentence.replace('.', ' ')
 		words = nltk.word_tokenize(proSent)
 		filtered = [word.lower().strip('.') for word in words if self.nonPunct.match(word)]
@@ -146,8 +146,8 @@ class Profanity:
 		fd = nltk.FreqDist(word.lower() for word in tokensTrue )
 		freqWordsTrue = fd.keys()[:35]
 
-		uniqueWordsPos = [word for word in freqWordsTrue if (word not in freqWordsFalse and word not in highlights and len(word) > 2)]
-		uniqueWordsNeg = [word for word in freqWordsFalse if (word not in freqWordsTrue and word not in highlights and len(word) > 2)]
+		uniqueWordsPos = [word for word in freqWordsTrue if (word not in freqWordsFalse and word not in self.highlights and len(word) > 2)]
+		uniqueWordsNeg = [word for word in freqWordsFalse if (word not in freqWordsTrue and word not in self.highlights and len(word) > 2)]
 
 		posWords = uniqueWordsPos[:8]
 		negWords = uniqueWordsNeg[:5]
@@ -181,10 +181,10 @@ class Profanity:
 		print nltk.classify.accuracy(classifierList[0], test_set)
 		# NaiveBayesClassifierccuracy.append(nltk.classify.accuracy(classifier, test_set))
 		s1 = classifierList[0].classify(fs[1])
-		classifierList[0].show_most_informative_features(10)
+		# classifierList[0].show_most_informative_features(10)
 
 		classifierList.append(nltk.DecisionTreeClassifier.train(train_set))
-		print nltk.classify.accuracy(classifierList[1], test_set)
+		# print nltk.classify.accuracy(classifierList[1], test_set)
 
 		if classifierType == 1:
 			classifier = classifierList[0]
@@ -197,8 +197,8 @@ class Profanity:
 			# if predLabel != label:
 		 # 		print feature, label, predLabel
 
-
-		return (classifier, impWords)
+		self.classifier = classifier
+		self.impWords = impWords
 
 
 
@@ -207,24 +207,27 @@ class Profanity:
 		if(len(sys.argv) >= 2):
 			sentenceTest = sys.argv[1]
 
-		(classifier, impWords) = trainClassifier()
-# r1 = predict(classifier, sentenceTest, impWords)
-# print r1
-
-		r2 = predictDescription(classifier, sentenceTest, impWords)
+		self.trainClassifier()
+		r2 = predictDescription(sentenceTest, impWords)
 		# print r2
  
 # helper functions
-#this is a great society to live, with designer kitchen , 24 hrs supply. It is available for rent. Price
-#is Rs13000. Property built by xyz constructions.
 
-if(len(sys.argv) >= 2):
-	flag = sys.argv[1]
+if __name__ == '__main__':
+	flag = 1
+	if len(sys.argv) > 1:
+		flag = sys.argv[1]
 
-highlights = ['hindu', 'muslim', 'jain', 'christian', 'muslims', 'parsi']
-profane = Profanity(1)
-# profane.trainClassifier(flag)
-profane.predictDescription(sys.argv[2])
+	demoText = "Very spacious apartment in the heart of mumbai. Affordable 2 bhk. This property is only for muslims"
+
+	# print sys.argv
+	if len(sys.argv) >= 3:
+		demoText = sys.argv[2]
+
+	highlights = ['hindu', 'muslim', 'jain', 'christian', 'muslims', 'parsi']
+	profane = Profanity(flag)
+	demoResult = profane.predictDescription(demoText)
+	print demoResult
 				
 
 
