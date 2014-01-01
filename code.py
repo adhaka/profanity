@@ -27,12 +27,11 @@ class hello:
 
         query = json.loads(query)
 
-        pprint({'query': query})
+        # pprint({'query': query})
 
         pd = query['pd']
         Profane = Pf(1)
         output = Profane.predictDescription(pd) 
-        print output
         return output
 
         # return factorial(n)

@@ -1,6 +1,6 @@
 
 import re, nltk, random, string, time
-import numpy as np
+# import numpy as np
 import sys
 
 class Profanity:
@@ -127,7 +127,7 @@ class Profanity:
 
 
 	def trainClassifier(self, classifierType):
-		f3 = open('/home/akashdhaka/R/phrase-intent-score/false.txt', 'r')
+		f3 = open('false.txt', 'r')
 
 		raw3 = f3.read()
 		f3.close()
@@ -137,7 +137,7 @@ class Profanity:
 		freqWordsFalse = fd.keys()[:35]
 
 
-		f4 = open('/home/akashdhaka/R/phrase-intent-score/true.txt', 'r')
+		f4 = open('true.txt', 'r')
 		raw4 = f4.read()
 		f4.close()
 		tokensTrue = nltk.wordpunct_tokenize(raw4)
@@ -183,7 +183,7 @@ class Profanity:
 		s1 = classifierList[0].classify(fs[1])
 		# classifierList[0].show_most_informative_features(10)
 
-		classifierList.append(nltk.DecisionTreeClassifier.train(train_set))
+		# classifierList.append(nltk.DecisionTreeClassifier.train(train_set))
 		# print nltk.classify.accuracy(classifierList[1], test_set)
 
 		if classifierType == 1:
